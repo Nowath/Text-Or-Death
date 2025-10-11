@@ -1,0 +1,18 @@
+{
+    "client": {
+        "screen_width": 1024,
+        "screen_height": 768,
+        "fps": 60,
+        "server_host": "localhost",
+        "server_port": 8888
+    },
+    "server": {
+        "host": "localhost",
+        "port": 8888,
+        "max_players": 4,
+        "round_time": 30
+    },
+    "game": {
+        "time_limit_per_round": 10
+    }
+}
