@@ -93,3 +93,5 @@ while gameRun:
     # Update display
     pygame.display.flip()
 pygame.quit()
+
+#เจแปน
