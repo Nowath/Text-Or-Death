@@ -1,4 +1,24 @@
+# Ignore Python cache files everywhere
 __pycache__/
 */__pycache__/
 **/__pycache__/
 *.py[cod]
+*.pyo
+
+# Ignore virtual environments
+venv/
+.env/
+.venv/
+
+# Ignore IDE/editor folders
+.vscode/
+.idea/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore Python build/distribution files
+build/
+dist/
+*.egg-info/
