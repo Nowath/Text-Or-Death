@@ -75,7 +75,7 @@ class GameScreen:
             elif event.key == pygame.K_RETURN:
                 current_text = "".join(self.message)
                 is_valid, result_message, color = self.word_checker.check_word(current_text)
-                self.check_result = "Nano"
+                self.check_result = "word" if is_valid else "not word"
                 self.result_color = color
             
             # Handle space
