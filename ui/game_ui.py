@@ -1,4 +1,5 @@
 import pygame
+from ui.charecter import Charecter
 
 class GameScreen:
     def __init__(self, screen, word_checker, config):

@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.checkword import WordChecker
 from ui.game_ui import GameScreen
+from ui.charecter import Charecter
 
 def main():
     """Main game loop - acts as a layout/container"""
