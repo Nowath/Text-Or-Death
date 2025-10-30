@@ -24,11 +24,6 @@ class MainPage:
     def render(self):
         self.screen.blit(self.background, (0, 0))
 
-        title = self.font.render('Text Or Death', True, (0, 0, 0))
-        text1 = self.font1.render('press any key', True, (90, 90, 90))
-
-        title_rect = title.get_rect(center=(self.screenWidth // 2, self.screenHeight // 2))
-        text1_rect = text1.get_rect(center=(self.screenWidth // 2, self.screenHeight // 2 + 60))
-
-        self.screen.blit(title, title_rect)
+        text1 = self.font1.render('press any key to Enter...', True, (80, 80, 80))
+        text1_rect = text1.get_rect(center=(self.screenWidth // 2, self.screenHeight // 2 + 150))
         self.screen.blit(text1, text1_rect)
