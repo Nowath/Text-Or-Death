@@ -1,6 +1,6 @@
 {
     "client": {
-        "screen_width": 1024,
+        "screen_width": 1280,
         "screen_height": 768,
         "fps": 60,
         "server_host": "localhost",
