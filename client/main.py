@@ -59,6 +59,7 @@ def main():
         if mainPage:
             main_page.render()
         else:
+            game_screen.update()
             game_screen.render()
 
         # Update display

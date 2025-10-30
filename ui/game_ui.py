@@ -1,4 +1,5 @@
 import pygame
+from ui.character import Character
 
 class GameScreen:
     def __init__(self, screen, word_checker, config, font):
@@ -29,6 +30,11 @@ class GameScreen:
         self.check_result = ""
         self.result_color = (255, 255, 255)
 
+        # Create player character at bottom center of screen
+        char_x = self.screen_width // 2 - 25  # Center (assuming width=50)
+        char_y = self.screen_height - 100  # 100 pixels from bottom
+        self.player1 = Character(char_x, char_y)
+
         # Set up key repeat
         pygame.key.set_repeat(500, 50)
 
@@ -58,7 +64,10 @@ class GameScreen:
         if event.type == pygame.QUIT:
             return False
 
-        elif event.type == pygame.KEYDOWN:
+        # ส่ง event ให้ Character จัดการการเคลื่อนที่
+        self.player1.handle_event(event)
+
+        if event.type == pygame.KEYDOWN:
             self.pressed_key = pygame.key.name(event.key)
 
             # Handle backspace
@@ -78,12 +87,15 @@ class GameScreen:
                 self.message.append(" ")
                 self.check_result = ""
 
-            # Add regular characters
             elif len(self.pressed_key) == 1:
                 self.message.append(self.pressed_key)
                 self.check_result = ""
 
         return True
+
+    def update(self):
+        """Update game state (call this in main game loop)"""
+        self.player1.update(self.screen_width)
 
     def render(self):
         """Render all UI elements"""
@@ -110,3 +122,6 @@ class GameScreen:
             result_x = self.screen_width // 2 - result_render.get_width() // 2
             result_y = self.screen_height // 2 + 100
             self.screen.blit(result_render, (result_x, result_y))
+
+        # Render character (top layer)
+        self.player1.render(self.screen)
