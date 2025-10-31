@@ -13,7 +13,7 @@ def main():
     # Load config
     with open("config.json", "r") as f:
         default_data = json.load(f)
-
+#Nano
     screen_width = int(default_data["client"]["screen_width"])
     screen_height = int(default_data["client"]["screen_height"])
 
