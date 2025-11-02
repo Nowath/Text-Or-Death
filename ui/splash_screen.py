@@ -12,7 +12,6 @@ class SplashScreen:
         self.duration = duration
         self.fade_speed = 5  # จำนวน alpha เพิ่มต่อ frame
 
-        # Load logo
         try:
             self.logo = pygame.image.load(logo_path).convert_alpha()
             # Resize logo ถ้าต้องการ
