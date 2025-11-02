@@ -1,5 +1,6 @@
 import pygame
 from ui.character import Character
+from ui.button import Button  # Import Button from separate file
 
 class GameScreen:
     def __init__(self, screen, word_checker, config, font):
@@ -35,13 +36,26 @@ class GameScreen:
         char_y = self.screen_height - 100  # 100 pixels from bottom
         self.player1 = Character(char_x, char_y)
 
+        # Create button in top right corner
+        button_width = 120
+        button_height = 50
+        button_x = self.screen_width - button_width - 20  # 20px from right edge
+        button_y = 20  # 20px from top
+        self.menu_button = Button(
+            button_x, button_y, button_width, button_height,
+            "Menu",
+            font_size=30,
+            color=(70, 130, 180),
+            hover_color=(100, 160, 210)
+        )
+
         # Set up key repeat
         pygame.key.set_repeat(500, 50)
 
     def _load_background(self):
         """Load and scale background image or create gradient"""
         try:
-            background = pygame.image.load("assets/Background/Pale/Background.png")
+            background = pygame.image.load("assets/Background/Sea/background_sea.jpg")
             background = pygame.transform.scale(background, (self.screen_width, self.screen_height))
             return background
         except Exception as e:
@@ -52,17 +66,14 @@ class GameScreen:
             return background
 
     def handle_event(self, event):
-        """
-        Handle pygame events
-
-        Args:
-            event: pygame event object
-
-        Returns:
-            bool: True to continue game, False to quit
-        """
         if event.type == pygame.QUIT:
             return False
+
+        # Check if button was clicked
+        if self.menu_button.is_clicked(event):
+            print("Menu button clicked!")
+            # Add your button action here
+            # For example: return "menu" to switch to menu screen
 
         # ส่ง event ให้ Character จัดการการเคลื่อนที่
         self.player1.handle_event(event)
@@ -87,7 +98,7 @@ class GameScreen:
                 self.message.append(" ")
                 self.check_result = ""
 
-            elif len(self.pressed_key) == 1:
+            elif len(self.pressed_key) == 1 and (self.pressed_key not in ["a","d"]):
                 self.message.append(self.pressed_key)
                 self.check_result = ""
 
@@ -95,6 +106,11 @@ class GameScreen:
 
     def update(self):
         """Update game state (call this in main game loop)"""
+        # Update button animation
+        mouse_pos = pygame.mouse.get_pos()
+        self.menu_button.update(mouse_pos)
+
+        # Update player
         self.player1.update(self.screen_width)
 
     def render(self):
@@ -125,3 +141,6 @@ class GameScreen:
 
         # Render character (top layer)
         self.player1.render(self.screen)
+
+        # Render button (top layer - last so it's on top)
+        self.menu_button.draw(self.screen)
