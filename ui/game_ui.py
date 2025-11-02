@@ -1,6 +1,8 @@
 import pygame
 from ui.character import Character
 from ui.button import Button  # Import Button from separate file
+import json
+import random
 
 class GameScreen:
     def __init__(self, screen, word_checker, config, font):
@@ -30,6 +32,10 @@ class GameScreen:
         self.pressed_key = ""
         self.check_result = ""
         self.result_color = (255, 255, 255)
+
+        with open('database.json', "r", encoding='utf-8') as f:
+            self.data = json.load(f)
+            print(self.data[random.randint(0,len(self.data))])
 
         # Create player character at bottom center of screen
         char_x = self.screen_width // 2 - 25  # Center (assuming width=50)
