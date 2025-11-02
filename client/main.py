@@ -2,11 +2,11 @@ import os
 import sys
 import pygame
 import json
-# Ensure the project root is on sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.checkword import WordChecker
 from ui.game_ui import GameScreen
 from ui.main_page import MainPage
+from ui.splash_screen import SplashScreen  # เพิ่มบรรทัดนี้
 
 def main():
     """Main game loop - acts as a layout/container"""
@@ -22,14 +22,17 @@ def main():
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("TextOrDeath")
 
+    # Show splash screen
+    splash = SplashScreen(screen, logo_path='assets/logo/logopygame.png', duration=2000)
+    if not splash.show():  # ถ้า user กด quit ระหว่าง splash
+        pygame.quit()
+        return
+
     # Initialize word checker
     word_checker = WordChecker("en_US")
-
-    font1 = 'assets/fonts/Bungee-Regular.ttf'
-    font2 = 'assets/fonts/IndieFlower-Regular.ttf'
     font3 = 'assets/fonts/Parkinsans-Regular.ttf'
 
-    # Initialize game screen component (pass config)
+    # Initialize game screen component
     game_screen = GameScreen(screen, word_checker, default_data, font3)
     main_page = MainPage(screen, font3, screen_width, screen_height)
 
@@ -39,18 +42,14 @@ def main():
     clock = pygame.time.Clock()
 
     while game_run:
-        # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game_run = False
                 break
-
             if mainPage:
-                # Any key press transitions to game screen
                 if event.type == pygame.KEYDOWN:
                     mainPage = False
             else:
-                # Let game screen handle events
                 game_run = game_screen.handle_event(event)
                 if not game_run:
                     break
@@ -59,12 +58,10 @@ def main():
         if mainPage:
             main_page.render()
         else:
+            game_screen.update()
             game_screen.render()
 
-        # Update display
         pygame.display.flip()
-
-        # Control frame rate
         clock.tick(60)
 
     pygame.quit()

@@ -3,7 +3,6 @@ import pygame
 class MainPage:
     def __init__(self, screen, font , screenWidth, screenHeight):
         self.screen = screen
-        self.font = pygame.font.Font(font,50)
         self.font1 = pygame.font.Font(font,20)
         self.screenWidth = screenWidth
         self.screenHeight = screenHeight
