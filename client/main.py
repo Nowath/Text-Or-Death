@@ -4,9 +4,9 @@ import pygame
 import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.checkword import WordChecker
-from ui.game_ui import GameScreen
-from ui.main_page import MainPage
-from ui.splash_screen import SplashScreen  # เพิ่มบรรทัดนี้
+from ui.page.game_ui import GameScreen
+from ui.page.main_page import MainPage
+from ui.page.splash_screen import SplashScreen
 
 def main():
     """Main game loop - acts as a layout/container"""
