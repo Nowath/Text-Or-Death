@@ -24,10 +24,22 @@ class GameScreen:
         # Set up fonts
         self.font = pygame.font.Font(font, 50)
         self.small_font = pygame.font.Font(font, 30)
-        self.block_font = pygame.font.Font(font, 40)
+        self.block_font = pygame.font.Font(font, 24)
 
         # Load background
         self.background = self._load_background()
+
+        # Game state - define block_size FIRST before loading images
+        self.current_input = ""
+        self.blocks = []  # List of letter blocks: [(letter, x, y), ...]
+        self.block_width = 140  # Width of block
+        self.block_height = 60  # Height of block
+        self.block_spacing = -26
+        self.block_base_y = self.screen_height - 60
+
+        # Load block images (after block_size is defined)
+        self.block_top_image = self._load_block_image('assets/Block/top.png')
+        self.block_bottom_image = self._load_block_image('assets/Block/bottom.png')
 
         # Load questions database
         with open('database.json', "r", encoding='utf-8') as f:
@@ -37,13 +49,6 @@ class GameScreen:
         self.time_limit = 30
         self.time_remaining = self.time_limit
         self.timer_start = pygame.time.get_ticks()
-
-        # Game state
-        self.current_input = ""
-        self.blocks = []  # List of letter blocks: [(letter, x, y), ...]
-        self.block_size = 50
-        self.block_spacing = 2
-        self.block_base_y = self.screen_height - 60  # Starting position from bottom
         
         # Question system
         self.current_question = None
@@ -119,8 +124,8 @@ class GameScreen:
         reversed_word = word[::-1]
         for letter in reversed_word:
             # Stack blocks vertically in the center
-            x = self.screen_width // 2 - self.block_size // 2
-            y = self.block_base_y - len(self.blocks) * (self.block_size + self.block_spacing)
+            x = self.screen_width // 2 - self.block_width // 2
+            y = self.block_base_y - len(self.blocks) * (self.block_height + self.block_spacing)
             self.blocks.append((letter, x, y))
         
         # Remove bottom blocks if character would go above screen
@@ -139,8 +144,8 @@ class GameScreen:
                 temp_blocks = self.blocks.copy()
                 self.blocks = []
                 for letter, _, _ in temp_blocks:
-                    x = self.screen_width // 2 - self.block_size // 2
-                    y = self.block_base_y - len(self.blocks) * (self.block_size + self.block_spacing)
+                    x = self.screen_width // 2 - self.block_width // 2
+                    y = self.block_base_y - len(self.blocks) * (self.block_height + self.block_spacing)
                     self.blocks.append((letter, x, y))
             else:
                 break
@@ -149,9 +154,9 @@ class GameScreen:
         """Calculate character position on top of the block tower"""
         if self.blocks:
             # Position character on top of the highest block
-            top_block_y = self.block_base_y - len(self.blocks) * (self.block_size + self.block_spacing)
+            top_block_y = self.block_base_y - len(self.blocks) * (self.block_height + self.block_spacing)
             char_x = self.screen_width // 2 - 25  # Center character (assuming width=50)
-            char_y = top_block_y - 10  # Closer to the top block (reduced from 60 to 55)
+            char_y = top_block_y - 10  # Closer to the top block
             return char_x, char_y
         else:
             # Default position at bottom center
@@ -176,6 +181,21 @@ class GameScreen:
             return background
         except Exception as e:
             print(f"Could not load background: {e}")
+            # Create a solid color surface if image not found
+            background = pygame.Surface((self.screen_width, self.screen_height))
+            background.fill((40, 40, 60))  # Dark blue-grey color
+            return background
+
+    def _load_block_image(self, path):
+        """Load and scale block image"""
+        try:
+            image = pygame.image.load(path)
+            image = pygame.transform.scale(image, (self.block_width, self.block_height))
+            return image
+        except Exception as e:
+            print(f"Could not load block image {path}: {e}")
+            # Return None if image not found, will use fallback rendering
+            return None
             # Create a solid color surface if image not found
             background = pygame.Surface((self.screen_width, self.screen_height))
             background.fill((40, 40, 60))  # Dark blue-grey color
@@ -319,16 +339,26 @@ class GameScreen:
                 self.screen.blit(feedback_text, (feedback_x, feedback_y))
 
             # Render letter blocks (ON TOP so they cover content below)
-            for letter, x, y in self.blocks:
-                # Draw block background
-                block_rect = pygame.Rect(x, y, self.block_size, self.block_size)
-                pygame.draw.rect(self.screen, (100, 100, 200), block_rect, border_radius=5)
-                pygame.draw.rect(self.screen, (255, 255, 255), block_rect, 2, border_radius=5)
+            for i, (letter, x, y) in enumerate(self.blocks):
+                # Determine if this is the top block (last in list = highest position)
+                is_top_block = (i == len(self.blocks) - 1)
                 
-                # Draw letter
+                # Choose the appropriate block image
+                if is_top_block and self.block_top_image:
+                    scale_image = pygame.transform.scale(self.block_top_image, (120, 60))
+                    self.screen.blit(scale_image, (x+10, y))
+                elif not is_top_block and self.block_bottom_image:
+                    self.screen.blit(self.block_bottom_image, (x, y))
+                else:
+                    # Fallback: draw colored rectangle if images not loaded
+                    block_rect = pygame.Rect(x, y, self.block_width, self.block_height)
+                    pygame.draw.rect(self.screen, (100, 100, 200), block_rect, border_radius=5)
+                    pygame.draw.rect(self.screen, (255, 255, 255), block_rect, 2, border_radius=5)
+                
+                # Draw letter on top of the block
                 letter_surface = self.block_font.render(letter.upper(), True, (255, 255, 255))
-                letter_x = x + (self.block_size - letter_surface.get_width()) // 2
-                letter_y = y + (self.block_size - letter_surface.get_height()) // 2
+                letter_x = x + (self.block_width - letter_surface.get_width()) // 2
+                letter_y = y + (self.block_height - letter_surface.get_height()) // 2+14
                 self.screen.blit(letter_surface, (letter_x, letter_y))
 
             # Render character on top of blocks (TOP LAYER)
