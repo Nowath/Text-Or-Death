@@ -31,11 +31,12 @@ class GameScreen:
 
         # Game state - define block_size FIRST before loading images
         self.current_input = ""
-        self.blocks = []  # List of letter blocks: [(letter, x, y), ...]
+        self.blocks = []  # List of letter blocks: [(letter, x, y, animation_progress), ...]
         self.block_width = 140  # Width of block
         self.block_height = 60  # Height of block
         self.block_spacing = -26
         self.block_base_y = self.screen_height - 60
+        self.animation_speed = 0.15  # Animation speed (0-1 per frame)
 
         # Load block images (after block_size is defined)
         self.block_top_image = self._load_block_image('assets/Block/top.png')
@@ -126,7 +127,8 @@ class GameScreen:
             # Stack blocks vertically in the center
             x = self.screen_width // 2 - self.block_width // 2
             y = self.block_base_y - len(self.blocks) * (self.block_height + self.block_spacing)
-            self.blocks.append((letter, x, y))
+            # Add animation progress (0 = just added, 1 = fully animated)
+            self.blocks.append((letter, x, y, 0.0))
         
         # Remove bottom blocks if character would go above screen
         self.remove_bottom_blocks_if_needed()
@@ -143,10 +145,10 @@ class GameScreen:
                 # Recalculate all block positions
                 temp_blocks = self.blocks.copy()
                 self.blocks = []
-                for letter, _, _ in temp_blocks:
+                for letter, _, _, anim_progress in temp_blocks:
                     x = self.screen_width // 2 - self.block_width // 2
                     y = self.block_base_y - len(self.blocks) * (self.block_height + self.block_spacing)
-                    self.blocks.append((letter, x, y))
+                    self.blocks.append((letter, x, y, anim_progress))
             else:
                 break
     
@@ -156,7 +158,7 @@ class GameScreen:
             # Position character on top of the highest block
             top_block_y = self.block_base_y - len(self.blocks) * (self.block_height + self.block_spacing)
             char_x = self.screen_width // 2 - 25  # Center character (assuming width=50)
-            char_y = top_block_y - 10  # Closer to the top block
+            char_y = top_block_y + 6  # Closer to the top block
             return char_x, char_y
         else:
             # Default position at bottom center
@@ -254,6 +256,14 @@ class GameScreen:
         # Update timer
         self.update_timer()
 
+        # Update block animations
+        updated_blocks = []
+        for letter, x, y, anim_progress in self.blocks:
+            if anim_progress < 1.0:
+                anim_progress = min(1.0, anim_progress + self.animation_speed)
+            updated_blocks.append((letter, x, y, anim_progress))
+        self.blocks = updated_blocks
+
         # Update character position to be on top of blocks
         char_x, char_y = self.get_character_position()
         self.player1.x = char_x
@@ -339,26 +349,43 @@ class GameScreen:
                 self.screen.blit(feedback_text, (feedback_x, feedback_y))
 
             # Render letter blocks (ON TOP so they cover content below)
-            for i, (letter, x, y) in enumerate(self.blocks):
+            for i, (letter, x, y, anim_progress) in enumerate(self.blocks):
                 # Determine if this is the top block (last in list = highest position)
                 is_top_block = (i == len(self.blocks) - 1)
                 
+                # Apply animation: slide up + fade in
+                # Easing function for smooth animation
+                eased_progress = 1 - (1 - anim_progress) ** 3  # Cubic ease-out
+                
+                # Calculate animated position (slide up from below)
+                slide_distance = 30
+                animated_y = y + (1 - eased_progress) * slide_distance
+                
+                # Calculate alpha for fade in
+                alpha = int(255 * eased_progress)
+                
                 # Choose the appropriate block image
                 if is_top_block and self.block_top_image:
-                    scale_image = pygame.transform.scale(self.block_top_image, (120, 60))
-                    self.screen.blit(scale_image, (x+10, y))
+                    block_img = self.block_top_image.copy()
+                    scaled_image = pygame.transform.scale(block_img, (120, 60))
+                    scaled_image.set_alpha(alpha)
+                    self.screen.blit(scaled_image, (x+10, animated_y))
                 elif not is_top_block and self.block_bottom_image:
-                    self.screen.blit(self.block_bottom_image, (x, y))
+                    block_img = self.block_bottom_image.copy()
+                    block_img.set_alpha(alpha)
+                    self.screen.blit(block_img, (x, animated_y))
                 else:
                     # Fallback: draw colored rectangle if images not loaded
-                    block_rect = pygame.Rect(x, y, self.block_width, self.block_height)
+                    block_rect = pygame.Rect(x, animated_y, self.block_width, self.block_height)
+                    color_with_alpha = (*((100, 100, 200)), alpha)
                     pygame.draw.rect(self.screen, (100, 100, 200), block_rect, border_radius=5)
                     pygame.draw.rect(self.screen, (255, 255, 255), block_rect, 2, border_radius=5)
                 
-                # Draw letter on top of the block
+                # Draw letter on top of the block with fade
                 letter_surface = self.block_font.render(letter.upper(), True, (255, 255, 255))
+                letter_surface.set_alpha(alpha)
                 letter_x = x + (self.block_width - letter_surface.get_width()) // 2
-                letter_y = y + (self.block_height - letter_surface.get_height()) // 2+14
+                letter_y = animated_y + (self.block_height - letter_surface.get_height()) // 2+14
                 self.screen.blit(letter_surface, (letter_x, letter_y))
 
             # Render character on top of blocks (TOP LAYER)
