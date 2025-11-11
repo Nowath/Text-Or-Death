@@ -1,6 +1,6 @@
 import pygame
 from ui.character import Character
-from ui.button import Button  # Import Button from separate file
+from ui.button import Button
 import json
 import random
 
@@ -21,32 +21,52 @@ class GameScreen:
         self.screen_width = int(config["client"]["screen_width"])
         self.screen_height = int(config["client"]["screen_height"])
 
-        # Set up font
+        # Set up fonts
         self.font = pygame.font.Font(font, 50)
+        self.small_font = pygame.font.Font(font, 30)
+        self.block_font = pygame.font.Font(font, 40)
 
         # Load background
         self.background = self._load_background()
 
-        # Game state
-        self.message = []
-        self.pressed_key = ""
-        self.check_result = ""
-        self.result_color = (255, 255, 255)
-
+        # Load questions database
         with open('database.json', "r", encoding='utf-8') as f:
-            self.data = json.load(f)
-            print(self.data[random.randint(0,len(self.data))])
+            self.questions_data = json.load(f)
 
-        # Create player character at bottom center of screen
-        char_x = self.screen_width // 2 - 25  # Center (assuming width=50)
-        char_y = self.screen_height - 100  # 100 pixels from bottom
-        self.player1 = Character(char_x, char_y)
+        # Timer (30 seconds per question)
+        self.time_limit = 30
+        self.time_remaining = self.time_limit
+        self.timer_start = pygame.time.get_ticks()
+
+        # Game state
+        self.current_input = ""
+        self.blocks = []  # List of letter blocks: [(letter, x, y), ...]
+        self.block_size = 50
+        self.block_spacing = 2
+        self.block_base_y = self.screen_height - 60  # Starting position from bottom
+        
+        # Question system
+        self.current_question = None
+        self.current_answers = []
+        self.question_index = 0
+        self.load_next_question()
+
+        # Game status
+        self.game_over = False
+        self.game_won = False
+        self.game_message = ""
+        self.feedback_message = ""
+        self.feedback_timer = 0
+        self.feedback_color = (255, 255, 255)
+
+        # Create player character - will be positioned on top of blocks
+        self.player1 = Character(0, 0)  # Position will be updated dynamically
 
         # Create button in top right corner
         button_width = 120
         button_height = 50
-        button_x = self.screen_width - button_width - 20  # 20px from right edge
-        button_y = 20  # 20px from top
+        button_x = self.screen_width - button_width - 20
+        button_y = 20
         self.menu_button = Button(
             button_x, button_y, button_width, button_height,
             "Menu",
@@ -57,6 +77,96 @@ class GameScreen:
 
         # Set up key repeat
         pygame.key.set_repeat(500, 50)
+
+    def load_next_question(self):
+        """Load the next question from database"""
+        if self.question_index < len(self.questions_data):
+            question_data = self.questions_data[self.question_index]
+            self.current_question = question_data["question"]
+            self.current_answers = [ans.lower() for ans in question_data["answer"]]
+            self.question_index += 1
+            self.time_remaining = self.time_limit
+            self.timer_start = pygame.time.get_ticks()
+        else:
+            # All questions answered - WIN!
+            self.game_won = True
+            self.game_over = True
+            self.game_message = "YOU WIN! All questions completed!"
+
+    def check_answer(self, answer):
+        """Check if the answer is correct"""
+        answer = answer.lower().strip()
+        if answer in self.current_answers:
+            # Correct answer - create blocks
+            self.create_blocks(answer)
+            self.current_input = ""
+            self.feedback_message = f"Correct! '{answer}'"
+            self.feedback_color = (0, 255, 0)
+            self.feedback_timer = pygame.time.get_ticks()
+            self.load_next_question()
+            return True
+        else:
+            # Wrong answer
+            self.feedback_message = "Wrong answer! Try again"
+            self.feedback_color = (255, 100, 100)
+            self.feedback_timer = pygame.time.get_ticks()
+            self.current_input = ""
+            return False
+
+    def create_blocks(self, word):
+        """Create letter blocks from the word - stacking vertically in center"""
+        # Reverse the word so first letter is at bottom
+        reversed_word = word[::-1]
+        for letter in reversed_word:
+            # Stack blocks vertically in the center
+            x = self.screen_width // 2 - self.block_size // 2
+            y = self.block_base_y - len(self.blocks) * (self.block_size + self.block_spacing)
+            self.blocks.append((letter, x, y))
+        
+        # Remove bottom blocks if character would go above screen
+        self.remove_bottom_blocks_if_needed()
+    
+    def remove_bottom_blocks_if_needed(self):
+        """Remove blocks from bottom if tower gets too high"""
+        min_char_y = 150  # Minimum Y position for character (below question area)
+        
+        while self.blocks:
+            char_x, char_y = self.get_character_position()
+            if char_y < min_char_y:
+                # Remove the bottom block
+                self.blocks.pop(0)
+                # Recalculate all block positions
+                temp_blocks = self.blocks.copy()
+                self.blocks = []
+                for letter, _, _ in temp_blocks:
+                    x = self.screen_width // 2 - self.block_size // 2
+                    y = self.block_base_y - len(self.blocks) * (self.block_size + self.block_spacing)
+                    self.blocks.append((letter, x, y))
+            else:
+                break
+    
+    def get_character_position(self):
+        """Calculate character position on top of the block tower"""
+        if self.blocks:
+            # Position character on top of the highest block
+            top_block_y = self.block_base_y - len(self.blocks) * (self.block_size + self.block_spacing)
+            char_x = self.screen_width // 2 - 25  # Center character (assuming width=50)
+            char_y = top_block_y - 10  # Closer to the top block (reduced from 60 to 55)
+            return char_x, char_y
+        else:
+            # Default position at bottom center
+            return self.screen_width // 2 - 25, self.screen_height - 100
+
+    def update_timer(self):
+        """Update the countdown timer"""
+        if not self.game_over:
+            elapsed = (pygame.time.get_ticks() - self.timer_start) / 1000
+            self.time_remaining = max(0, self.time_limit - elapsed)
+            
+            if self.time_remaining <= 0:
+                # Time's up - GAME OVER
+                self.game_over = True
+                self.game_message = "TIME'S UP! You died!"
 
     def _load_background(self):
         """Load and scale background image or create gradient"""
@@ -78,35 +188,40 @@ class GameScreen:
         # Check if button was clicked
         if self.menu_button.is_clicked(event):
             print("Menu button clicked!")
-            # Add your button action here
-            # For example: return "menu" to switch to menu screen
+            return False
 
-        # ส่ง event ให้ Character จัดการการเคลื่อนที่
-        self.player1.handle_event(event)
+        # Don't handle input if game is over
+        if self.game_over:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                # Restart game - reset all variables
+                self.current_input = ""
+                self.blocks = []
+                self.question_index = 0
+                self.game_over = False
+                self.game_won = False
+                self.game_message = ""
+                self.load_next_question()
+            return True
 
         if event.type == pygame.KEYDOWN:
-            self.pressed_key = pygame.key.name(event.key)
-
             # Handle backspace
-            if event.key == pygame.K_BACKSPACE and self.message:
-                self.message.pop()
-                self.check_result = ""
+            if event.key == pygame.K_BACKSPACE:
+                self.current_input = self.current_input[:-1]
 
-            # Handle Enter key
+            # Handle Enter key - submit answer
             elif event.key == pygame.K_RETURN:
-                current_text = "".join(self.message)
-                is_valid, result_message, color = self.word_checker.check_word(current_text)
-                self.check_result = "word" if is_valid else "not word"
-                self.result_color = color
+                if self.current_input:
+                    self.check_answer(self.current_input)
 
             # Handle space
             elif event.key == pygame.K_SPACE:
-                self.message.append(" ")
-                self.check_result = ""
+                self.current_input += " "
 
-            elif len(self.pressed_key) == 1 and (self.pressed_key not in ["a","d"]):
-                self.message.append(self.pressed_key)
-                self.check_result = ""
+            # Handle letter keys
+            else:
+                key_name = pygame.key.name(event.key)
+                if len(key_name) == 1:
+                    self.current_input += key_name
 
         return True
 
@@ -116,37 +231,108 @@ class GameScreen:
         mouse_pos = pygame.mouse.get_pos()
         self.menu_button.update(mouse_pos)
 
-        # Update player
-        self.player1.update(self.screen_width)
+        # Update timer
+        self.update_timer()
+
+        # Update character position to be on top of blocks
+        char_x, char_y = self.get_character_position()
+        self.player1.x = char_x
+        self.player1.y = char_y
+
+        # Clear feedback message after 2 seconds
+        if self.feedback_message and pygame.time.get_ticks() - self.feedback_timer > 2000:
+            self.feedback_message = ""
 
     def render(self):
         """Render all UI elements"""
         # Draw background (bottom layer)
         self.screen.blit(self.background, (0, 0))
 
-        # Render pressed key text
-        if self.pressed_key:
-            text = self.font.render(f"Key pressed: {self.pressed_key}", True, (255, 255, 255))
-            text_x = self.screen_width // 2 - text.get_width() // 2
-            text_y = self.screen_height // 2
-            self.screen.blit(text, (text_x, text_y))
+        if self.game_over:
+            # Show game over screen
+            if self.game_won:
+                message_color = (0, 255, 0)  # Green for win
+            else:
+                message_color = (255, 0, 0)  # Red for lose
+            
+            game_over_text = self.font.render(self.game_message, True, message_color)
+            text_x = self.screen_width // 2 - game_over_text.get_width() // 2
+            text_y = self.screen_height // 2 - 50
+            self.screen.blit(game_over_text, (text_x, text_y))
 
-        # Render message
-        message_text = "".join(self.message)
-        message_render = self.font.render(message_text, True, (255, 255, 255))
-        message_x = self.screen_width // 2 - message_render.get_width() // 2
-        message_y = self.screen_height // 2 + 60
-        self.screen.blit(message_render, (message_x, message_y))
+            restart_text = self.small_font.render("Press ENTER to restart", True, (255, 255, 255))
+            restart_x = self.screen_width // 2 - restart_text.get_width() // 2
+            restart_y = self.screen_height // 2 + 50
+            self.screen.blit(restart_text, (restart_x, restart_y))
+        else:
+            # Render question at top
+            if self.current_question:
+                question_text = self.small_font.render(self.current_question.upper(), True, (255, 255, 255))
+                question_x = self.screen_width // 2 - question_text.get_width() // 2
+                question_y = 50
+                
+                # Draw background for question
+                padding = 20
+                question_bg = pygame.Rect(question_x - padding, question_y - padding,
+                                         question_text.get_width() + padding * 2,
+                                         question_text.get_height() + padding * 2)
+                pygame.draw.rect(self.screen, (0, 0, 0, 128), question_bg, border_radius=10)
+                
+                self.screen.blit(question_text, (question_x, question_y))
 
-        # Render check result
-        if self.check_result:
-            result_render = self.font.render(self.check_result, True, self.result_color)
-            result_x = self.screen_width // 2 - result_render.get_width() // 2
-            result_y = self.screen_height // 2 + 100
-            self.screen.blit(result_render, (result_x, result_y))
+            # Render timer
+            timer_color = (255, 255, 255) if self.time_remaining > 10 else (255, 0, 0)
+            timer_text = self.small_font.render(f"Time: {int(self.time_remaining)}s", True, timer_color)
+            self.screen.blit(timer_text, (20, 20))
 
-        # Render character (top layer)
-        self.player1.render(self.screen)
+            # Render question progress
+            progress_text = self.small_font.render(f"Question: {self.question_index}/{len(self.questions_data)}", 
+                                                   True, (255, 255, 255))
+            self.screen.blit(progress_text, (20, 60))
+
+            # Render current input on the right side (BEFORE blocks so blocks can cover it)
+            input_display = self.current_input + "_"  # Add cursor
+            input_text = self.font.render(input_display, True, (255, 255, 255))
+            
+            # Position on right side
+            padding = 15
+            input_width = max(input_text.get_width(), 300) + padding * 2
+            input_x = self.screen_width - input_width - 20
+            input_y = 150
+            
+            # Draw input background
+            input_bg = pygame.Rect(input_x, input_y,
+                                  input_width,
+                                  input_text.get_height() + padding * 2)
+            pygame.draw.rect(self.screen, (50, 50, 50, 200), input_bg, border_radius=10)
+            
+            # Center text in the box
+            text_x = input_x + (input_width - input_text.get_width()) // 2
+            text_y = input_y + padding
+            self.screen.blit(input_text, (text_x, text_y))
+
+            # Render feedback message on the right side (BEFORE blocks)
+            if self.feedback_message:
+                feedback_text = self.small_font.render(self.feedback_message, True, self.feedback_color)
+                feedback_x = self.screen_width - feedback_text.get_width() - 30
+                feedback_y = input_y + input_text.get_height() + padding * 2 + 20
+                self.screen.blit(feedback_text, (feedback_x, feedback_y))
+
+            # Render letter blocks (ON TOP so they cover content below)
+            for letter, x, y in self.blocks:
+                # Draw block background
+                block_rect = pygame.Rect(x, y, self.block_size, self.block_size)
+                pygame.draw.rect(self.screen, (100, 100, 200), block_rect, border_radius=5)
+                pygame.draw.rect(self.screen, (255, 255, 255), block_rect, 2, border_radius=5)
+                
+                # Draw letter
+                letter_surface = self.block_font.render(letter.upper(), True, (255, 255, 255))
+                letter_x = x + (self.block_size - letter_surface.get_width()) // 2
+                letter_y = y + (self.block_size - letter_surface.get_height()) // 2
+                self.screen.blit(letter_surface, (letter_x, letter_y))
+
+            # Render character on top of blocks (TOP LAYER)
+            self.player1.render(self.screen)
 
         # Render button (top layer - last so it's on top)
         self.menu_button.draw(self.screen)
