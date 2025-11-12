@@ -253,7 +253,7 @@ class GameScreen:
         mouse_pos = pygame.mouse.get_pos()
         self.menu_button.update(mouse_pos)
 
-        # Update timer
+        # Update timer ้ัพ่ะีา่ั้
         self.update_timer()
 
         # Update block animations
