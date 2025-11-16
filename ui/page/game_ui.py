@@ -27,7 +27,7 @@ class GameScreen:
         # Initialize components
         self.block_manager = BlockManager(self.screen_width, self.screen_height)
         self.block_manager.set_font(self.block_font)
-        
+
         self.lava = Lava(self.screen_width, self.screen_height)
 
         # Load questions database
@@ -38,7 +38,7 @@ class GameScreen:
         self.time_limit = 30
         self.time_remaining = self.time_limit
         self.timer_start = pygame.time.get_ticks()
-        
+
         # Question system
         self.current_question = None
         self.current_answers = []
@@ -108,20 +108,20 @@ class GameScreen:
             num_blocks = len(answer)
             lava_decrease = num_blocks * (self.block_manager.block_height + self.block_manager.block_spacing)
             self.lava.lower_lava(lava_decrease)
-            
+
             # Add blocks
             self.block_manager.add_blocks(answer)
-            
+
             # Update feedback
             self.current_input = ""
             self.feedback_message = f"Correct! '{answer}'"
             self.feedback_color = (0, 255, 0)
             self.feedback_timer = pygame.time.get_ticks()
-            
+
             # Start lava rising after certain questions (constant speed)
             if self.question_index >= self.lava.start_question:
                 self.lava.start_rising()
-            
+
             self.load_next_question()
             return True
         else:
@@ -137,7 +137,7 @@ class GameScreen:
         if not self.game_over:
             elapsed = (pygame.time.get_ticks() - self.timer_start) / 1000
             self.time_remaining = max(0, self.time_limit - elapsed)
-            
+
             if self.time_remaining <= 0:
                 self.game_over = True
                 self.game_message = "TIME'S UP! You died!"
@@ -195,7 +195,7 @@ class GameScreen:
 
         # Update lava
         self.lava.update()
-        
+
         # Check lava collision
         if not self.game_over and self.lava.check_collision(self.player1):
             self.game_over = True
@@ -231,15 +231,20 @@ class GameScreen:
     def _render_game_over(self):
         """Render game over screen"""
         message_color = (0, 255, 0) if self.game_won else (255, 0, 0)
-        
+
         game_over_text = self.font.render(self.game_message, True, message_color)
         text_x = self.screen_width // 2 - game_over_text.get_width() // 2
         text_y = self.screen_height // 2 - 50
         self.screen.blit(game_over_text, (text_x, text_y))
 
+        point_text = self.small_font.render(f'Point: {self.block_manager.get_total_blocks_created()}', True, (255,255,255))
+        text_x = self.screen_width // 2 - point_text.get_width() // 2
+        text_y = self.screen_height // 2 + 30
+        self.screen.blit(point_text, (text_x, text_y))
+
         restart_text = self.small_font.render("Press ENTER to restart", True, (255, 255, 255))
         restart_x = self.screen_width // 2 - restart_text.get_width() // 2
-        restart_y = self.screen_height // 2 + 50
+        restart_y = self.screen_height // 2 + 100
         self.screen.blit(restart_text, (restart_x, restart_y))
 
     def _render_game(self):
@@ -249,7 +254,7 @@ class GameScreen:
             question_text = self.small_font.render(self.current_question.upper(), True, (255, 255, 255))
             question_x = self.screen_width // 2 - question_text.get_width() // 2
             question_y = 50
-            
+
             padding = 20
             question_bg = pygame.Rect(
                 question_x - padding, question_y - padding,
@@ -266,7 +271,7 @@ class GameScreen:
 
         # Render progress
         progress_text = self.small_font.render(
-            f"Question: {self.question_index}/{len(self.questions_data)}", 
+            f"Question: {self.question_index}/{len(self.questions_data)}",
             True, (255, 255, 255)
         )
         self.screen.blit(progress_text, (20, 60))
@@ -277,18 +282,18 @@ class GameScreen:
         # Render feedback
         if self.feedback_message:
             feedback_text = self.small_font.render(self.feedback_message, True, self.feedback_color)
-            
+
             # Calculate position
             padding = 15
             feedback_width = feedback_text.get_width() + padding * 2
             feedback_height = feedback_text.get_height() + padding * 2
             feedback_x = self.screen_width - feedback_width - 20
             feedback_y = 280
-            
+
             # Draw background
             feedback_bg = pygame.Rect(feedback_x, feedback_y, feedback_width, feedback_height)
             pygame.draw.rect(self.screen, (50, 50, 50, 200), feedback_bg, border_radius=10)
-            
+
             # Draw text
             text_x = feedback_x + padding
             text_y = feedback_y + padding
@@ -307,15 +312,15 @@ class GameScreen:
         """Render the input box on the right side"""
         input_display = self.current_input + "_"
         input_text = self.font.render(input_display, True, (255, 255, 255))
-        
+
         padding = 15
         input_width = max(input_text.get_width(), 300) + padding * 2
         input_x = self.screen_width - input_width - 20
         input_y = 150
-        
+
         input_bg = pygame.Rect(input_x, input_y, input_width, input_text.get_height() + padding * 2)
         pygame.draw.rect(self.screen, (50, 50, 50, 200), input_bg, border_radius=10)
-        
+
         text_x = input_x + (input_width - input_text.get_width()) // 2
         text_y = input_y + padding
         self.screen.blit(input_text, (text_x, text_y))
