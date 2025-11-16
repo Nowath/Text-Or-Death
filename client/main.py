@@ -49,9 +49,16 @@ def main():
             if mainPage:
                 if event.type == pygame.KEYDOWN:
                     mainPage = False
+                    # Reset game when starting from main page
+                    game_screen = GameScreen(screen, word_checker, default_data, font3)
             else:
-                game_run = game_screen.handle_event(event)
-                if not game_run:
+                result = game_screen.handle_event(event)
+                if result == "menu":
+                    # Return to main page
+                    mainPage = True
+                elif not result:
+                    # Quit game
+                    game_run = False
                     break
 
         # Render

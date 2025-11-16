@@ -75,7 +75,7 @@ class GameScreen:
         button_y = 20
         self.menu_button = Button(
             button_x, button_y, button_width, button_height,
-            "Menu",
+            "Quit",
             font_size=30,
             color=(70, 130, 180),
             hover_color=(100, 160, 210)
@@ -210,7 +210,7 @@ class GameScreen:
         # Check if button was clicked
         if self.menu_button.is_clicked(event):
             print("Menu button clicked!")
-            return False
+            return "menu"  # Return to main page
 
         # Don't handle input if game is over
         if self.game_over:
