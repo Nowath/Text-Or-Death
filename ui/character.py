@@ -2,7 +2,7 @@ import pygame
 from io import BytesIO
 
 class Character:
-    def __init__(self, x, y, width=50, height=50, speed=5):
+    def __init__(self, x, y, width=50, height=50, speed=5, image_path=None):
         self.x = x
         self.y = y
         self.width = width
@@ -10,12 +10,16 @@ class Character:
         self.speed = speed
         self.velocity_x = 0
 
-        # Try to load character sprite, fallback to colored rectangle
+        # Load character sprite
+        if image_path is None:
+            image_path = 'assets/Items/000_0017_star3.png'
+        
         try:
-            self.image = pygame.image.load('assets/Items/000_0017_star3.png')
+            self.image = pygame.image.load(image_path)
             self.image = pygame.transform.scale(self.image, (width, height))
             self.use_image = True
-        except:
+        except Exception as e:
+            print(f"Could not load character image {image_path}: {e}")
             self.use_image = False
             self.color = (255, 100, 100)  # Red color
 

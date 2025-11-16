@@ -6,10 +6,11 @@ import json
 
 
 class GameScreen:
-    def __init__(self, screen, word_checker, config, font):
+    def __init__(self, screen, word_checker, config, font, character_image_path=None):
         """Initialize the game screen component"""
         self.screen = screen
         self.word_checker = word_checker
+        self.character_image_path = character_image_path
 
         # Get screen dimensions from config
         self.screen_width = int(config["client"]["screen_width"])
@@ -53,8 +54,8 @@ class GameScreen:
         self.feedback_timer = 0
         self.feedback_color = (255, 255, 255)
 
-        # Create player character
-        self.player1 = Character(0, 0)
+        # Create player character with selected image (larger size)
+        self.player1 = Character(0, 0, width=120, height=120, image_path=self.character_image_path)
 
         # Create menu button
         button_width = 120
@@ -63,7 +64,7 @@ class GameScreen:
         button_y = 20
         self.menu_button = Button(
             button_x, button_y, button_width, button_height,
-            "Menu",
+            "Quit",
             font_size=30,
             color=(70, 130, 180),
             hover_color=(100, 160, 210)
@@ -75,7 +76,7 @@ class GameScreen:
     def _load_background(self):
         """Load and scale background image"""
         try:
-            background = pygame.image.load("assets/Background/Sea/background_sea.jpg")
+            background = pygame.image.load("assets/Background/galaxy/background1.jpg")
             background = pygame.transform.scale(background, (self.screen_width, self.screen_height))
             return background
         except Exception as e:
@@ -117,9 +118,9 @@ class GameScreen:
             self.feedback_color = (0, 255, 0)
             self.feedback_timer = pygame.time.get_ticks()
             
-            # Increase lava speed after certain questions
+            # Start lava rising after certain questions (constant speed)
             if self.question_index >= self.lava.start_question:
-                self.lava.increase_speed()
+                self.lava.start_rising()
             
             self.load_next_question()
             return True
@@ -208,7 +209,7 @@ class GameScreen:
             self.player1.width, self.player1.height
         )
         self.player1.x = char_x
-        self.player1.y = char_y
+        self.player1.y = char_y-60
 
         # Clear feedback after 2 seconds
         if self.feedback_message and pygame.time.get_ticks() - self.feedback_timer > 2000:
@@ -276,9 +277,22 @@ class GameScreen:
         # Render feedback
         if self.feedback_message:
             feedback_text = self.small_font.render(self.feedback_message, True, self.feedback_color)
-            feedback_x = self.screen_width - feedback_text.get_width() - 30
-            feedback_y = 230
-            self.screen.blit(feedback_text, (feedback_x, feedback_y))
+            
+            # Calculate position
+            padding = 15
+            feedback_width = feedback_text.get_width() + padding * 2
+            feedback_height = feedback_text.get_height() + padding * 2
+            feedback_x = self.screen_width - feedback_width - 20
+            feedback_y = 280
+            
+            # Draw background
+            feedback_bg = pygame.Rect(feedback_x, feedback_y, feedback_width, feedback_height)
+            pygame.draw.rect(self.screen, (50, 50, 50, 200), feedback_bg, border_radius=10)
+            
+            # Draw text
+            text_x = feedback_x + padding
+            text_y = feedback_y + padding
+            self.screen.blit(feedback_text, (text_x, text_y))
 
         # Render blocks
         self.block_manager.render(self.screen)

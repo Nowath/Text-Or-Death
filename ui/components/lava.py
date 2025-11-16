@@ -10,17 +10,18 @@ class Lava:
         # Lava properties
         self.lava_y = screen_height  # Start below screen
         self.lava_height = 100
-        self.lava_speed = 0  # Will increase as questions are answered
+        self.lava_speed = 0  # Will be set to constant speed after start_question
         self.start_question = 3  # Lava starts rising after this many questions
-        self.speed_increment = 0.3  # Speed increase per question
+        self.constant_speed = 0.5  # Constant speed (not increasing)
         
         # Colors
         self.lava_color = (255, 50, 0)  # Bright red-orange
         self.lava_top_color = (200, 0, 0)  # Dark red
     
-    def increase_speed(self):
-        """Increase lava speed (called when answering correctly)"""
-        self.lava_speed += self.speed_increment
+    def start_rising(self):
+        """Start lava rising at constant speed"""
+        if self.lava_speed == 0:
+            self.lava_speed = self.constant_speed
     
     def lower_lava(self, amount):
         """Lower the lava by a certain amount"""

@@ -49,7 +49,7 @@ class BlockManager:
     
     def _remove_bottom_blocks_if_needed(self):
         """Remove blocks from bottom if tower gets too high"""
-        min_y = 150  # Minimum Y position for top block
+        min_y = 180  # Minimum Y position for top block
         
         while self.blocks:
             top_block_y = self._get_top_block_y()
