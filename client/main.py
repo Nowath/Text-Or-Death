@@ -7,6 +7,7 @@ from utils.checkword import WordChecker
 from ui.page.game_ui import GameScreen
 from ui.page.main_page import MainPage
 from ui.page.splash_screen import SplashScreen
+from ui.page.character_select import CharacterSelectScreen
 
 def main():
     """Main game loop - acts as a layout/container"""
@@ -32,13 +33,15 @@ def main():
     word_checker = WordChecker("en_US")
     font3 = 'assets/fonts/Parkinsans-Regular.ttf'
 
-    # Initialize game screen component
-    game_screen = GameScreen(screen, word_checker, default_data, font3)
+    # Initialize pages
     main_page = MainPage(screen, font3, screen_width, screen_height)
+    character_select = CharacterSelectScreen(screen, font3, screen_width, screen_height)
+    game_screen = None
+    selected_character = None
 
     # Main game loop
     game_run = True
-    mainPage = True
+    current_screen = "main"  # "main", "character_select", "game"
     clock = pygame.time.Clock()
 
     while game_run:
@@ -46,18 +49,40 @@ def main():
             if event.type == pygame.QUIT:
                 game_run = False
                 break
-            if mainPage:
+            
+            if current_screen == "main":
                 if event.type == pygame.KEYDOWN:
-                    mainPage = False
-            else:
-                game_run = game_screen.handle_event(event)
-                if not game_run:
+                    # Go to character select
+                    current_screen = "character_select"
+            
+            elif current_screen == "character_select":
+                result = character_select.handle_event(event)
+                if result and result != False:
+                    if result == "back":
+                        current_screen = "main"
+                    else:
+                        # Character selected, start game
+                        selected_character = result
+                        game_screen = GameScreen(screen, word_checker, default_data, font3, selected_character)
+                        current_screen = "game"
+            
+            elif current_screen == "game":
+                result = game_screen.handle_event(event)
+                if result == "menu":
+                    # Return to main page
+                    current_screen = "main"
+                    game_screen = None
+                elif not result:
+                    # Quit game
+                    game_run = False
                     break
 
         # Render
-        if mainPage:
+        if current_screen == "main":
             main_page.render()
-        else:
+        elif current_screen == "character_select":
+            character_select.render()
+        elif current_screen == "game":
             game_screen.update()
             game_screen.render()
 
