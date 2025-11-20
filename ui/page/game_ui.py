@@ -76,7 +76,7 @@ class GameScreen:
     def _load_background(self):
         """Load and scale background image"""
         try:
-            background = pygame.image.load("assets/Background/galaxy/background1.jpg")
+            background = pygame.image.load("assets/Background/faithNano.png")
             background = pygame.transform.scale(background, (self.screen_width, self.screen_height))
             return background
         except Exception as e:
